@@ -1,31 +1,27 @@
-﻿using System.Runtime.InteropServices;
+﻿using Core;
 using System.Text.Json;
 
-string osDescription = RuntimeInformation.OSDescription;
-string osEnvironment = Environment.OSVersion.ToString();
-string architecture = RuntimeInformation.ProcessArchitecture.ToString();
-string dotnetVersion = Environment.Version.ToString();
-string runtime = RuntimeInformation.FrameworkDescription;
-string applicationDirectory = AppContext.BaseDirectory;
-string currentDirectory = Environment.CurrentDirectory;
+EnvironmentReport report = EnvironmentInfo.Collect();
+
 string domain = "Склад (товари, партії, залишки, переміщення)";
 
 if (args.Contains("--json"))
 {
     var information = new
     {
-        osDescription,
-        osEnvironment,
-        architecture,
-        dotnetVersion,
-        runtime,
-        applicationDirectory,
-        currentDirectory,
+        report.OSDescription,
+        report.OSEnvironment,
+        report.Architecture,
+        report.DotnetVersion,
+        report.Runtime,
+        report.ApplicationDirectory,
+        report.CurrentDirectory,
         domain
     };
 
     var options = new JsonSerializerOptions
     {
+        WriteIndented = false,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
@@ -37,13 +33,13 @@ else
     Console.WriteLine("Студент: Володимир Врублевський, група FEI-33");
     Console.WriteLine(new string('-', 70));
 
-    Console.WriteLine($"{"ОС:",-25} {osDescription}");
-    Console.WriteLine($"{"ОС Environment:",-25} {osEnvironment}");
-    Console.WriteLine($"{"Архітектура:",-25} {architecture}");
-    Console.WriteLine($"{"Версія .NET:",-25} {dotnetVersion}");
-    Console.WriteLine($"{"Runtime:",-25} {runtime}");
-    Console.WriteLine($"{"Каталог застосунку:",-25} {applicationDirectory}");
-    Console.WriteLine($"{"Поточний каталог:",-25} {currentDirectory}");
+    Console.WriteLine($"{"ОС:",-25} {report.OSDescription}");
+    Console.WriteLine($"{"ОС Environment:",-25} {report.OSEnvironment}");
+    Console.WriteLine($"{"Архітектура:",-25} {report.Architecture}");
+    Console.WriteLine($"{"Версія .NET:",-25} {report.DotnetVersion}");
+    Console.WriteLine($"{"Runtime:",-25} {report.Runtime}");
+    Console.WriteLine($"{"Каталог застосунку:",-25} {report.ApplicationDirectory}");
+    Console.WriteLine($"{"Поточний каталог:",-25} {report.CurrentDirectory}");
     Console.WriteLine($"{"Предметна область:",-25} {domain}");
 
     Console.WriteLine(new string('-', 70));
