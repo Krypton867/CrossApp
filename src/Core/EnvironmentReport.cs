@@ -7,4 +7,5 @@ public sealed record EnvironmentReport(
     string DotnetVersion,
     string Runtime,
     string ApplicationDirectory,
+    string BuildNote,
     string CurrentDirectory);

@@ -18,6 +18,7 @@ public static class EnvironmentInfo
             Environment.Version.ToString(),
             RuntimeInformation.FrameworkDescription,
             AppContext.BaseDirectory,
+            BuildNote,
             Environment.CurrentDirectory);
     }
 }

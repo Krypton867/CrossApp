@@ -1,46 +1,110 @@
 ﻿using Core;
-using System.Text.Json;
+using Core.Dto;
+using Core.Import;
 
-EnvironmentReport report = EnvironmentInfo.Collect();
+string path = args.Length > 0
+    ? args[0]
+    : Path.Combine("data", "sample.csv");
 
-string domain = "Склад (товари, партії, залишки, переміщення)";
-
-if (args.Contains("--json"))
+if (!File.Exists(path))
 {
-    var information = new
+    Console.WriteLine(
+        $"Файл не знайдено: {Path.GetFullPath(path)}");
+
+    return 1;
+}
+
+ImportResult<ProductDto> result =
+    Path.GetExtension(path).ToLowerInvariant() switch
     {
-        report.OSDescription,
-        report.OSEnvironment,
-        report.Architecture,
-        report.DotnetVersion,
-        report.Runtime,
-        report.ApplicationDirectory,
-        report.CurrentDirectory,
-        domain
+        ".csv" => ProductCsvImporter.Load(path),
+        ".json" => ProductJsonImporter.Load(path),
+        _ => new ImportResult<ProductDto>(
+            [],
+            [$"Непідтримуваний формат файлу: {Path.GetExtension(path)}"])
     };
 
-    var options = new JsonSerializerOptions
-    {
-        WriteIndented = false,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-    };
-
-    Console.WriteLine(JsonSerializer.Serialize(information, options));
-}
-else
+if (Path.GetFileName(path)
+    .Equals("mixed.csv", StringComparison.OrdinalIgnoreCase))
 {
-    Console.WriteLine("CrossApp – практикум з крос-платформного програмування");
-    Console.WriteLine("Студент: Володимир Врублевський, група FEI-33");
-    Console.WriteLine(new string('-', 70));
+    ImportResult<object> mixedResult =
+        MixedCsvImporter.Load(path);
 
-    Console.WriteLine($"{"ОС:",-25} {report.OSDescription}");
-    Console.WriteLine($"{"ОС Environment:",-25} {report.OSEnvironment}");
-    Console.WriteLine($"{"Архітектура:",-25} {report.Architecture}");
-    Console.WriteLine($"{"Версія .NET:",-25} {report.DotnetVersion}");
-    Console.WriteLine($"{"Runtime:",-25} {report.Runtime}");
-    Console.WriteLine($"{"Каталог застосунку:",-25} {report.ApplicationDirectory}");
-    Console.WriteLine($"{"Поточний каталог:",-25} {report.CurrentDirectory}");
-    Console.WriteLine($"{"Предметна область:",-25} {domain}");
+    Console.WriteLine(
+        $"Завантажено записів: {mixedResult.Items.Count}");
 
-    Console.WriteLine(new string('-', 70));
+    foreach (object item in mixedResult.Items)
+    {
+        switch (item)
+        {
+            case ProductDto product:
+                Console.WriteLine(
+                    $"Товар: {product.Id,-6} " +
+                    $"{product.Name,-25} " +
+                    $"{product.Quantity} {product.Unit}");
+                break;
+
+            case WarehouseDto warehouse:
+                Console.WriteLine(
+                    $"Склад: {warehouse.Id,-6} " +
+                    $"{warehouse.Name,-20} " +
+                    $"{warehouse.City}");
+                break;
+        }
+    }
+
+    if (mixedResult.Errors.Count > 0)
+    {
+        Console.WriteLine(
+            $"Пропущено рядків: {mixedResult.Errors.Count}");
+
+        foreach (string error in mixedResult.Errors)
+            Console.WriteLine($" ! {error}");
+    }
+
+    return 0;
 }
+
+int total = result.Items.Count + result.Errors.Count;
+int accepted = result.Items.Count;
+int skipped = result.Errors.Count;
+
+double errorPercent =
+    total == 0
+        ? 0
+        : skipped * 100.0 / total;
+
+Console.WriteLine(
+    $"Статистика: усього {total}, " +
+    $"прийнято {accepted}, " +
+    $"пропущено {skipped}, " +
+    $"помилок {errorPercent:F1}%");
+
+Console.WriteLine(
+    $"Завантажено записів: {result.Items.Count}");
+
+Console.WriteLine();
+
+foreach (ProductDto product in result.Items.Take(5))
+{
+    Console.WriteLine(
+        $" {product.Id,-6} " +
+        $"{product.Sku,-10} " +
+        $"{product.Name,-30} " +
+        $"{product.Quantity,5} " +
+        $"{product.Unit}");
+}
+
+if (result.Errors.Count > 0)
+{
+    Console.WriteLine();
+    Console.WriteLine(
+        $"Пропущено рядків: {result.Errors.Count}");
+
+    foreach (string error in result.Errors)
+    {
+        Console.WriteLine($" ! {error}");
+    }
+}
+
+return 0;
