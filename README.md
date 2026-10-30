@@ -111,3 +111,24 @@ Framework-dependent публікація значно менша, оскільк
 12. Конструктор `Product` є приватним. 
    Створення товару виконується через фабричний метод `Product.Create()`,
    який перевіряє всі необхідні інваріанти.
+
+
+## Лабораторна робота 5 — сервісний шар і сховища
+
+Реалізовано сервісний шар для роботи з каталогом товарів.
+
+- `ICatalogStore` — інтерфейс сховища.
+- `InMemoryCatalogStore` — зберігання в оперативній пам'яті.
+- `FileCatalogStore` — зберігання у JSON-файлі.
+- `CatalogService` — бізнес-операції з товарами.
+- `CachingCatalogStore` — декоратор з кешуванням результатів читання.
+
+Залежності передаються вручну через конструктор `CatalogService`.
+Конкретне сховище вибирається у `Program.cs` за аргументом `--file`.
+Контейнер Microsoft.Extensions.DependencyInjection не використовується.
+
+### Запуск
+
+```powershell
+dotnet run --project src/Cli
+dotnet run --project src/Cli -- --file

@@ -1,0 +1,42 @@
+[
+  {
+    "Id": "83bffd76",
+    "Sku": "SKU-101",
+    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
+    "Unit": "\u043C",
+    "Quantity": 65,
+    "Note": null
+  },
+  {
+    "Id": "bbac4942",
+    "Sku": "SKU-101",
+    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
+    "Unit": "\u043C",
+    "Quantity": 65,
+    "Note": null
+  },
+  {
+    "Id": "fecc4a88",
+    "Sku": "SKU-101",
+    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
+    "Unit": "\u043C",
+    "Quantity": 65,
+    "Note": null
+  },
+  {
+    "Id": "60bddba5",
+    "Sku": "SKU-101",
+    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
+    "Unit": "\u043C",
+    "Quantity": 80,
+    "Note": null
+  },
+  {
+    "Id": "2c1fd411",
+    "Sku": "SKU-101",
+    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
+    "Unit": "\u043C",
+    "Quantity": 65,
+    "Note": null
+  }
+]

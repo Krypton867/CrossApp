@@ -2,241 +2,130 @@
 using Core.Dto;
 using Core.Import;
 using Core.Domain;
+using Core.Abstractions;
+using Core.Services;
+using Core.Storage;
 
-string path = args.Length > 0
-    ? args[0]
-    : Path.Combine("data", "sample.csv");
 
-if (!File.Exists(path))
+Console.WriteLine("CrossApp — лабораторна робота 5");
+Console.WriteLine("Сервісний шар і сховища");
+Console.WriteLine();
+
+bool useFile = args.Contains(
+    "--file",
+    StringComparer.OrdinalIgnoreCase);
+
+string dataPath = Path.Combine(
+    Directory.GetCurrentDirectory(),
+    "data",
+    "catalog.json");
+
+ICatalogStore store = StoreFactory.Create(args);
+var service = new CatalogService(store);
+
+Console.WriteLine($"Сховище: {store.GetType().Name}");
+
+if (useFile)
+{
+    Console.WriteLine($"Файл: {dataPath}");
+}
+
+Console.WriteLine();
+
+// 1. Додавання товару
+Console.WriteLine("=== 1. Додавання товару ===");
+
+Product created = service.Add(
+    "SKU-101",
+    "Кабель UTP cat6",
+    "м",
+    50);
+
+Console.WriteLine($"Створено: {created}");
+
+// 2. Прихід товару
+Console.WriteLine();
+Console.WriteLine("=== 2. Прихід товару ===");
+
+service.Receive(created.Id, 25);
+
+Product? received = service.Find(created.Id);
+
+Console.WriteLine($"Після приходу: {received}");
+
+// 3. Видача товару
+Console.WriteLine();
+Console.WriteLine("=== 3. Видача товару ===");
+
+service.Issue(created.Id, 10);
+
+Product? issued = service.Find(created.Id);
+
+Console.WriteLine($"Після видачі: {issued}");
+
+// 4. Пошук за ID
+Console.WriteLine();
+Console.WriteLine("=== 4. Пошук за ID ===");
+
+Product? found = service.Find(created.Id);
+
+Console.WriteLine(found is not null
+    ? $"Знайдено: {found}"
+    : "Товар не знайдено");
+
+// 5. Список товарів
+Console.WriteLine();
+Console.WriteLine("=== 5. Список товарів ===");
+
+IReadOnlyList<Product> products = service.All();
+
+foreach (Product product in products)
 {
     Console.WriteLine(
-        $"Файл не знайдено: {Path.GetFullPath(path)}");
-
-    return 1;
+        $"{product.Id,-10} " +
+        $"{product.Sku,-10} " +
+        $"{product.Name,-25} " +
+        $"{product.Quantity,6} " +
+        $"{product.Unit}");
 }
 
-ImportResult<ProductDto> result =
-    Path.GetExtension(path).ToLowerInvariant() switch
-    {
-        ".csv" => ProductCsvImporter.Load(path),
-        ".json" => ProductJsonImporter.Load(path),
-        _ => new ImportResult<ProductDto>(
-            [],
-            [$"Непідтримуваний формат файлу: {Path.GetExtension(path)}"])
-    };
+Console.WriteLine($"Усього товарів: {products.Count}");
 
-if (Path.GetFileName(path)
-    .Equals("mixed.csv", StringComparison.OrdinalIgnoreCase))
+// 6. Пошук за умовою — додаткове завдання
+Console.WriteLine();
+Console.WriteLine("=== 6. Товари із залишком менше 100 ===");
+
+IReadOnlyList<Product> lowStock = service.Search(
+    product => product.Quantity < 100);
+
+foreach (Product product in lowStock)
 {
-    ImportResult<object> mixedResult =
-        MixedCsvImporter.Load(path);
-
-    Console.WriteLine(
-        $"Завантажено записів: {mixedResult.Items.Count}");
-
-    foreach (object item in mixedResult.Items)
-    {
-        switch (item)
-        {
-            case ProductDto dto:
-                Console.WriteLine(
-                    $"Товар: {dto.Id,-6} " +
-                    $"{dto.Name,-25} " +
-                    $"{dto.Quantity} {dto.Unit}");
-                break;
-
-            case WarehouseDto warehouse:
-                Console.WriteLine(
-                    $"Склад: {warehouse.Id,-6} " +
-                    $"{warehouse.Name,-20} " +
-                    $"{warehouse.City}");
-                break;
-        }
-    }
-
-    if (mixedResult.Errors.Count > 0)
-    {
-        Console.WriteLine(
-            $"Пропущено рядків: {mixedResult.Errors.Count}");
-
-        foreach (string error in mixedResult.Errors)
-            Console.WriteLine($" ! {error}");
-    }
-
-    return 0;
+    Console.WriteLine(product);
 }
 
-int total = result.Items.Count + result.Errors.Count;
-int accepted = result.Items.Count;
-int skipped = result.Errors.Count;
-
-double errorPercent =
-    total == 0
-        ? 0
-        : skipped * 100.0 / total;
-
-Console.WriteLine(
-    $"Статистика: усього {total}, " +
-    $"прийнято {accepted}, " +
-    $"пропущено {skipped}, " +
-    $"помилок {errorPercent:F1}%");
-
-Console.WriteLine(
-    $"Завантажено записів: {result.Items.Count}");
-
+// 7. Сценарій відмови
 Console.WriteLine();
+Console.WriteLine("=== 7. Перевірка помилок ===");
 
-foreach (ProductDto dto in result.Items.Take(5))
+try
 {
-    Console.WriteLine(
-        $" {dto.Id,-6} " +
-        $"{dto.Sku,-10} " +
-        $"{dto.Name,-30} " +
-        $"{dto.Quantity,5} " +
-        $"{dto.Unit}");
+    service.Receive("NO-SUCH-ID", 10);
 }
-
-if (result.Errors.Count > 0)
+catch (InvalidOperationException ex)
 {
-    Console.WriteLine();
-    Console.WriteLine(
-        $"Пропущено рядків: {result.Errors.Count}");
-
-    foreach (string error in result.Errors)
-    {
-        Console.WriteLine($" ! {error}");
-    }
+    Console.WriteLine($"Помилка: {ex.Message}");
 }
 
-Console.WriteLine();
-Console.WriteLine("=== Сценарій 1: успіх ===");
-
-Product product = Product.Create(
-    "P-001",
-    "sku-001",
-    "Цемент М400 25кг",
-    "шт",
-    100);
-
-Console.WriteLine(product);
-
-product.RegisterArrival(50);
-product.Issue(30);
-
-Console.WriteLine(product);
-
-Console.WriteLine();
-
-Console.WriteLine("=== Сценарій 2: порушення інваріантів ===");
-
-TryDo(
-    "видача більша за залишок",
-    () => product.Issue(1000));
-
-TryDo(
-    "порожній SKU",
-    () => Product.Create(
-        "P-002",
-        " ",
-        "Пісок",
-        "т",
-        10));
-
-TryDo(
-    "від'ємний залишок",
-    () => Product.Create(
-        "P-003",
-        "SKU-003",
-        "Цегла",
-        "шт",
-        -5));
-
-TryDo(
-    "нульовий прихід",
-    () => product.RegisterArrival(0));
-
-Console.WriteLine();
-Console.WriteLine($"Стан після всіх відмов: {product}");
-
-static void TryDo(string title, Action action)
+try
 {
-    try
-    {
-        action();
-
-        Console.WriteLine(
-            $" {title}: виняток НЕ спрацював — інваріант відсутній!");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine(
-            $" {title}: {ex.GetType().Name} — {ex.Message}");
-    }
+    store.Add(created);
 }
-
-
-DomainImportResult<Product> domainResult =
-    ProductImportService.Convert(result);
-
-Console.WriteLine();
-Console.WriteLine("=== Доменна модель ===");
-
-Console.WriteLine(
-    $"Створено Product: {domainResult.Items.Count}");
-
-foreach (Product productItem in domainResult.Items.Take(5))
+catch (InvalidOperationException ex)
 {
-    Console.WriteLine($" {productItem}");
-}
-
-if (domainResult.Errors.Count > 0)
-{
-    Console.WriteLine(
-        $"Помилок: {domainResult.Errors.Count}");
-
-    foreach (string error in domainResult.Errors)
-        Console.WriteLine($" ! {error}");
+    Console.WriteLine($"Помилка: {ex.Message}");
 }
 
 Console.WriteLine();
-Warehouse warehousetest = Warehouse.Create(
-    "W-001",
-    "Основний склад",
-    "Львів");
-
-Product producttest = Product.Create(
-    "P-001",
-    "SKU-001",
-    "Цемент",
-    "шт",
-    100);
-
-warehousetest.AddProduct(producttest);
-
-TryDo(
-    "додати той самий товар повторно",
-    () => warehousetest.AddProduct(producttest));
-
-TryDo(
-    "видати товар, якого немає",
-    () => warehousetest.IssueProduct("SKU-999", 10));
-
-Product newproduct = Product.Create(
-    "P-001",
-    "SKU-001",
-    "Цемент",
-    "шт",
-    100);
-
-Console.WriteLine();
-Console.WriteLine(newproduct.Status);
-
-newproduct.ChangeStatus(ProductStatus.Suspended);
-
-Console.WriteLine(newproduct.Status);
-
-newproduct.ChangeStatus(ProductStatus.Active);
-
-Console.WriteLine(newproduct.Status);
+Console.WriteLine("Роботу завершено.");
 
 return 0;
