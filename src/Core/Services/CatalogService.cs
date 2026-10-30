@@ -1,15 +1,41 @@
 using Core.Abstractions;
 using Core.Domain;
+using Core.Events;
 
 namespace Core.Services;
 
 public sealed class CatalogService
 {
     private readonly ICatalogStore _store;
+    private readonly INotificationSink? _notificationSink;
 
-    public CatalogService(ICatalogStore store)
+    public CatalogService(
+        ICatalogStore store,
+        INotificationSink? notificationSink = null)
     {
-        _store = store ?? throw new ArgumentNullException(nameof(store));
+        _store = store
+            ?? throw new ArgumentNullException(nameof(store));
+
+        _notificationSink = notificationSink;
+    }
+
+    public event EventHandler<CatalogChangedEventArgs>? Changed;
+
+    private void OnChanged(
+        Product product,
+        CatalogChangeKind kind,
+        int delta,
+        int? quantityAfter = null)
+    {
+        var eventArgs = new CatalogChangedEventArgs(
+            product.Id,
+            kind,
+            delta,
+            quantityAfter ?? product.Quantity);
+
+        Changed?.Invoke(this, eventArgs);
+
+        _notificationSink?.Notify(eventArgs);
     }
 
     public Product Add(
@@ -29,6 +55,8 @@ public sealed class CatalogService
 
         _store.Add(product);
 
+        OnChanged(product, CatalogChangeKind.Added, quantity);
+
         return product;
     }
 
@@ -41,6 +69,11 @@ public sealed class CatalogService
         product.RegisterArrival(quantity);
 
         _store.Update(product);
+
+        OnChanged(
+            product,
+            CatalogChangeKind.Received,
+            quantity);
     }
 
     public void Issue(string id, int quantity)
@@ -52,6 +85,11 @@ public sealed class CatalogService
         product.Issue(quantity);
 
         _store.Update(product);
+
+        OnChanged(
+            product,
+            CatalogChangeKind.Issued,
+            -quantity);
     }
 
     public IReadOnlyList<Product> All()
@@ -66,10 +104,36 @@ public sealed class CatalogService
 
     public bool Remove(string id)
     {
-        return _store.Remove(id);
+        Product? product = _store.GetById(id);
+
+        if (product is null)
+            return false;
+
+        bool removed = _store.Remove(id);
+
+        if (removed)
+        {
+            OnChanged(
+                product,
+                CatalogChangeKind.Removed,
+                -product.Quantity,
+                0);
+        }
+
+        return removed;
     }
 
     public IReadOnlyList<Product> Search(
+        Func<Product, bool> predicate)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        return _store.List()
+            .Where(predicate)
+            .ToList();
+    }
+
+    public IReadOnlyList<Product> FindAll(
         Func<Product, bool> predicate)
     {
         ArgumentNullException.ThrowIfNull(predicate);

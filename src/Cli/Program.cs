@@ -1,38 +1,58 @@
 ﻿using Core;
-using Core.Dto;
-using Core.Import;
-using Core.Domain;
 using Core.Abstractions;
+using Core.Domain;
+using Core.Events;
+using Core.Import;
 using Core.Services;
 using Core.Storage;
+using Cli.Notifications;
 
-
-Console.WriteLine("CrossApp — лабораторна робота 5");
-Console.WriteLine("Сервісний шар і сховища");
+Console.WriteLine("CrossApp — лабораторна робота 6");
+Console.WriteLine("Доменні події, делегати та лямбди");
 Console.WriteLine();
 
 bool useFile = args.Contains(
     "--file",
     StringComparer.OrdinalIgnoreCase);
 
-string dataPath = Path.Combine(
-    Directory.GetCurrentDirectory(),
-    "data",
-    "catalog.json");
-
 ICatalogStore store = StoreFactory.Create(args);
 var service = new CatalogService(store);
 
 Console.WriteLine($"Сховище: {store.GetType().Name}");
-
-if (useFile)
-{
-    Console.WriteLine($"Файл: {dataPath}");
-}
-
 Console.WriteLine();
 
-// 1. Додавання товару
+// Основний файл журналу подій
+string logPath = Path.Combine(
+    AppContext.BaseDirectory,
+    "logs",
+    "app.log");
+
+Directory.CreateDirectory(
+    Path.GetDirectoryName(logPath)!);
+
+// Перший підписник: консоль і файл
+void OnCatalogChanged(
+    object? sender,
+    CatalogChangedEventArgs e)
+{
+    string line =
+        $"{e.At:HH:mm:ss} {e.Kind,-8} {e.Id} " +
+        $"{e.Delta,4:+0;-0;0} → залишок {e.QuantityAfter}";
+
+    Console.WriteLine(line);
+
+    File.AppendAllText(
+        logPath,
+        line + Environment.NewLine);
+}
+
+service.Changed += OnCatalogChanged;
+
+// Другий підписник: лямбда з замиканням
+int changes = 0;
+
+service.Changed += (_, _) => changes++;
+
 Console.WriteLine("=== 1. Додавання товару ===");
 
 Product created = service.Add(
@@ -43,70 +63,30 @@ Product created = service.Add(
 
 Console.WriteLine($"Створено: {created}");
 
-// 2. Прихід товару
 Console.WriteLine();
 Console.WriteLine("=== 2. Прихід товару ===");
 
 service.Receive(created.Id, 25);
 
-Product? received = service.Find(created.Id);
+Console.WriteLine($"Поточний товар: {service.Find(created.Id)}");
+Console.WriteLine($"Подій отримано: {changes}");
 
-Console.WriteLine($"Після приходу: {received}");
-
-// 3. Видача товару
 Console.WriteLine();
-Console.WriteLine("=== 3. Видача товару ===");
+Console.WriteLine("=== 3. Перевірка відмови ===");
 
-service.Issue(created.Id, 10);
-
-Product? issued = service.Find(created.Id);
-
-Console.WriteLine($"Після видачі: {issued}");
-
-// 4. Пошук за ID
-Console.WriteLine();
-Console.WriteLine("=== 4. Пошук за ID ===");
-
-Product? found = service.Find(created.Id);
-
-Console.WriteLine(found is not null
-    ? $"Знайдено: {found}"
-    : "Товар не знайдено");
-
-// 5. Список товарів
-Console.WriteLine();
-Console.WriteLine("=== 5. Список товарів ===");
-
-IReadOnlyList<Product> products = service.All();
-
-foreach (Product product in products)
+// Від'ємна кількість порушує інваріант Product.
+try
 {
-    Console.WriteLine(
-        $"{product.Id,-10} " +
-        $"{product.Sku,-10} " +
-        $"{product.Name,-25} " +
-        $"{product.Quantity,6} " +
-        $"{product.Unit}");
+    service.Receive(created.Id, -5);
+}
+catch (ArgumentOutOfRangeException ex)
+{
+    Console.WriteLine($"Помилка: {ex.Message}");
 }
 
-Console.WriteLine($"Усього товарів: {products.Count}");
+Console.WriteLine($"Подій після помилки: {changes}");
 
-// 6. Пошук за умовою — додаткове завдання
-Console.WriteLine();
-Console.WriteLine("=== 6. Товари із залишком менше 100 ===");
-
-IReadOnlyList<Product> lowStock = service.Search(
-    product => product.Quantity < 100);
-
-foreach (Product product in lowStock)
-{
-    Console.WriteLine(product);
-}
-
-// 7. Сценарій відмови
-Console.WriteLine();
-Console.WriteLine("=== 7. Перевірка помилок ===");
-
+// Неіснуючий ID також не повинен породжувати подію.
 try
 {
     service.Receive("NO-SUCH-ID", 10);
@@ -116,14 +96,87 @@ catch (InvalidOperationException ex)
     Console.WriteLine($"Помилка: {ex.Message}");
 }
 
-try
+Console.WriteLine($"Подій після пошуку відсутнього товару: {changes}");
+
+Console.WriteLine();
+Console.WriteLine("=== 4. Відписка першого підписника ===");
+
+service.Changed -= OnCatalogChanged;
+
+service.Receive(created.Id, 5);
+
+Console.WriteLine($"Після відписки: {service.Find(created.Id)}");
+Console.WriteLine($"Подій отримано: {changes}");
+
+Console.WriteLine();
+Console.WriteLine("=== 5. Пошук через Func<Product, bool> ===");
+
+IReadOnlyList<Product> lowStock = service.FindAll(
+    product => product.Quantity < 10);
+
+if (lowStock.Count == 0)
 {
-    store.Add(created);
+    Console.WriteLine("Товарів із залишком менше 10 немає.");
 }
-catch (InvalidOperationException ex)
+else
 {
-    Console.WriteLine($"Помилка: {ex.Message}");
+    foreach (Product product in lowStock)
+        Console.WriteLine(product);
 }
+
+Console.WriteLine();
+Console.WriteLine("=== 6. Додаткове завдання: Action<string> ===");
+
+string csvPath = Path.Combine(
+    Directory.GetCurrentDirectory(),
+    "data",
+    "sample.csv");
+
+if (File.Exists(csvPath))
+{
+    var importResult = ProductCsvImporter.Load(
+        csvPath,
+        message => Console.WriteLine($"[Імпорт] {message}"));
+
+    Console.WriteLine(
+        $"Імпортовано записів: {importResult.Items.Count}");
+
+    Console.WriteLine(
+        $"Помилок імпорту: {importResult.Errors.Count}");
+}
+else
+{
+    Console.WriteLine(
+        $"Файл для демонстрації імпорту не знайдено: {csvPath}");
+}
+
+Console.WriteLine();
+Console.WriteLine("=== 7. Додаткове завдання: INotificationSink ===");
+
+// Окремий сервіс для демонстрації DI.
+// Він використовує окреме сховище, щоб не змінювати
+// дані основного сценарію.
+ICatalogStore demoStore = new InMemoryCatalogStore();
+
+string sinkLogPath = Path.Combine(
+    AppContext.BaseDirectory,
+    "logs",
+    "sink-demo.log");
+
+INotificationSink sink = new CompositeNotificationSink(
+    new ConsoleSink(),
+    new FileSink(sinkLogPath));
+
+var sinkService = new CatalogService(demoStore, sink);
+
+sinkService.Add(
+    "SKU-DI-01",
+    "Демонстраційний товар",
+    "шт",
+    1);
+
+Console.WriteLine($"Журнал подій: {logPath}");
+Console.WriteLine($"Журнал DI-демонстрації: {sinkLogPath}");
 
 Console.WriteLine();
 Console.WriteLine("Роботу завершено.");
