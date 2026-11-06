@@ -22,7 +22,10 @@ public static class SampleData
             Product.Create("P-012", "SKU-012", "Стрічка армуюча", "м", 400),
             Product.Create("P-013", "SKU-013", "Мінеральна вата", "м2", 90),
             Product.Create("P-014", "SKU-014", "Монтажна піна", "шт", 75),
-            Product.Create("P-015", "SKU-015", "Труба ПВХ", "м", 160)
+            Product.Create("P-015", "SKU-015", "Труба ПВХ", "м", 160),
+            Product.Create("P-016", "SKU-016", "Герметик силіконовий", "шт", 5),
+            Product.Create("P-017", "SKU-017", "Дюбелі", "уп", 8),
+            Product.Create("P-018", "SKU-018", "Кутник монтажний", "шт", 3)
         ];
     }
 }
