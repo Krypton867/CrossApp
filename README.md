@@ -194,3 +194,73 @@ dotnet run --project src/Cli -- report-deferred
 ```
 
 Для використання файлового сховища додається аргумент `--file`.
+
+## Лабораторна робота 9 — шляхи, JSON, конфігурація та secrets
+
+Конфігурація читається з `src/Cli/appsettings.json` і необов'язкового `appsettings.Development.json`; ці файли копіюються до вихідного каталогу програми. Відносний `Storage:DataPath` відраховується від `AppContext.BaseDirectory`, тому поточний робочий каталог не впливає на місце збереження. `--file` вмикає постійне JSON-сховище, без нього використовується демонстраційний каталог у пам'яті.
+
+### Налаштування
+
+| Ключ | Значення | Призначення |
+|---|---|---|
+| `Storage:DataPath` | `data` | Каталог даних (відносно папки програми або абсолютний) |
+| `Storage:FileName` | `items.json` | Назва JSON-файлу каталогу |
+| `Logging:MinimumLevel` | `Information` | Конфігураційний рівень журналювання; наразі відображається CLI |
+| `EnvironmentName` | `Production` | Профіль; за потреби перевизначається `DOTNET_ENVIRONMENT` |
+| `Warehouse:DefaultUnit` | `шт` | Типова одиниця вимірювання для складу |
+| `Integration:ApiKey` | не зберігається в git | Secret із user-secrets або середовища; відображається тільки факт наявності |
+
+При `DOTNET_ENVIRONMENT=Development` додатково завантажується `appsettings.Development.json`, де `Logging:MinimumLevel=Debug`. Середовищні змінні з префіксом `CROSSAPP_` перекривають JSON, подвійне підкреслення `__` позначає вкладені розділи. Окрема змінна `CROSSAPP_DATA_PATH` має пріоритет над `Storage:DataPath`.
+
+### Команди з кореня solution
+
+```powershell
+dotnet run --project src/Cli -- export
+dotnet run --project src/Cli -- import
+dotnet run --project src/Cli -- import data/import.json
+dotnet run --project src/Cli -- import-stream data/import.json --file
+```
+
+`export` записує повну поточну колекцію до налаштованого файлу; `import` без шляху читає цей файл. У режимі `--file` імпорт із того самого файлу пропустить усі наявні ID; для перевірки додавання використовуйте окремий файл з новими ID.
+
+### PowerShell
+
+```powershell
+$env:DOTNET_ENVIRONMENT = "Development"
+$env:CROSSAPP_DATA_PATH = "$HOME\CrossAppData"
+$env:CROSSAPP_Storage__FileName = "products.json"
+$env:CROSSAPP_Integration__ApiKey = "demo-only-value"
+dotnet run --project src/Cli -- export
+Remove-Item Env:CROSSAPP_Integration__ApiKey
+Remove-Item Env:CROSSAPP_DATA_PATH
+Remove-Item Env:CROSSAPP_Storage__FileName
+Remove-Item Env:DOTNET_ENVIRONMENT
+```
+
+Для локальних secrets:
+
+```powershell
+dotnet user-secrets set "Integration:ApiKey" "local-demo-value" --project src/Cli
+dotnet user-secrets list --project src/Cli
+```
+
+Реальні ключі не виводяться у консолі та не записуються до репозиторію. User-secrets призначені для локальної розробки; це не зашифроване захищене сховище для production.
+
+### bash (Linux)
+
+```bash
+DOTNET_ENVIRONMENT=Development CROSSAPP_DATA_PATH=/tmp/crossapp-data dotnet run --project src/Cli -- export
+CROSSAPP_Storage__FileName=products.json dotnet run --project src/Cli -- export
+```
+
+### Перевірка
+
+```powershell
+dotnet build
+dotnet test
+git status --short
+```
+
+Запустити `dotnet run --project src/Cli -- export` з кореня, а потім із `src/Cli` виконати `dotnet run -- export`: шлях до даних має залишатися однаковим. Видалення каталогу даних і повторний `export` створюють його заново. Некоректний JSON виводить зрозуміле повідомлення. Кирилиця зберігається у читабельному вигляді через `UnsafeRelaxedJsonEscaping`. Файлове сховище записує `.tmp` і замінює цільовий файл через `File.Move`.
+
+Непокритими автоматизованими тестами можуть залишатися рідкісні збої файлової системи та окремі конфігураційні сценарії; частину з них перевіряємо вручну.

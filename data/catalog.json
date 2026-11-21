@@ -1,42 +1,146 @@
 [
   {
-    "Id": "83bffd76",
-    "Sku": "SKU-101",
-    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
-    "Unit": "\u043C",
-    "Quantity": 65,
+    "Id": "P-001",
+    "Sku": "SKU-001",
+    "Name": "Цемент М400",
+    "Unit": "шт",
+    "Quantity": 120,
     "Note": null
   },
   {
-    "Id": "bbac4942",
-    "Sku": "SKU-101",
-    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
-    "Unit": "\u043C",
-    "Quantity": 65,
+    "Id": "P-002",
+    "Sku": "SKU-002",
+    "Name": "Пісок будівельний",
+    "Unit": "т",
+    "Quantity": 18,
     "Note": null
   },
   {
-    "Id": "fecc4a88",
-    "Sku": "SKU-101",
-    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
-    "Unit": "\u043C",
-    "Quantity": 65,
+    "Id": "P-003",
+    "Sku": "SKU-003",
+    "Name": "Цегла червона",
+    "Unit": "шт",
+    "Quantity": 4200,
     "Note": null
   },
   {
-    "Id": "60bddba5",
-    "Sku": "SKU-101",
-    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
-    "Unit": "\u043C",
-    "Quantity": 80,
+    "Id": "P-004",
+    "Sku": "SKU-004",
+    "Name": "Фарба водоемульсійна",
+    "Unit": "шт",
+    "Quantity": 36,
     "Note": null
   },
   {
-    "Id": "2c1fd411",
-    "Sku": "SKU-101",
-    "Name": "\u041A\u0430\u0431\u0435\u043B\u044C UTP cat6",
-    "Unit": "\u043C",
-    "Quantity": 65,
+    "Id": "P-005",
+    "Sku": "SKU-005",
+    "Name": "Шпаклівка фінішна",
+    "Unit": "кг",
+    "Quantity": 250,
+    "Note": null
+  },
+  {
+    "Id": "P-006",
+    "Sku": "SKU-006",
+    "Name": "Профіль CD-60",
+    "Unit": "м",
+    "Quantity": 800,
+    "Note": null
+  },
+  {
+    "Id": "P-007",
+    "Sku": "SKU-007",
+    "Name": "Саморізи 3.5x25",
+    "Unit": "уп",
+    "Quantity": 140,
+    "Note": null
+  },
+  {
+    "Id": "P-008",
+    "Sku": "SKU-008",
+    "Name": "Грунтовка",
+    "Unit": "л",
+    "Quantity": 60,
+    "Note": null
+  },
+  {
+    "Id": "P-009",
+    "Sku": "SKU-009",
+    "Name": "Плитка керамічна",
+    "Unit": "м2",
+    "Quantity": 310,
+    "Note": null
+  },
+  {
+    "Id": "P-010",
+    "Sku": "SKU-010",
+    "Name": "Клей плитковий",
+    "Unit": "кг",
+    "Quantity": 540,
+    "Note": null
+  },
+  {
+    "Id": "P-011",
+    "Sku": "SKU-011",
+    "Name": "Гіпсокартон",
+    "Unit": "лист",
+    "Quantity": 200,
+    "Note": null
+  },
+  {
+    "Id": "P-012",
+    "Sku": "SKU-012",
+    "Name": "Стрічка армуюча",
+    "Unit": "м",
+    "Quantity": 400,
+    "Note": null
+  },
+  {
+    "Id": "P-013",
+    "Sku": "SKU-013",
+    "Name": "Мінеральна вата",
+    "Unit": "м2",
+    "Quantity": 90,
+    "Note": null
+  },
+  {
+    "Id": "P-014",
+    "Sku": "SKU-014",
+    "Name": "Монтажна піна",
+    "Unit": "шт",
+    "Quantity": 75,
+    "Note": null
+  },
+  {
+    "Id": "P-015",
+    "Sku": "SKU-015",
+    "Name": "Труба ПВХ",
+    "Unit": "м",
+    "Quantity": 160,
+    "Note": null
+  },
+  {
+    "Id": "P-016",
+    "Sku": "SKU-016",
+    "Name": "Герметик силіконовий",
+    "Unit": "шт",
+    "Quantity": 5,
+    "Note": null
+  },
+  {
+    "Id": "P-017",
+    "Sku": "SKU-017",
+    "Name": "Дюбелі",
+    "Unit": "уп",
+    "Quantity": 8,
+    "Note": null
+  },
+  {
+    "Id": "P-018",
+    "Sku": "SKU-018",
+    "Name": "Кутник монтажний",
+    "Unit": "шт",
+    "Quantity": 3,
     "Note": null
   }
 ]

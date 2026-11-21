@@ -1,36 +1,23 @@
-using Core;
 using Core.Abstractions;
 
 namespace Core.Storage;
 
 public static class StoreFactory
 {
-    public static ICatalogStore Create(string[] args)
+    public static ICatalogStore Create(string[] args, string filePath)
     {
         ArgumentNullException.ThrowIfNull(args);
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
-        ICatalogStore store;
+        bool useFile = args.Contains("--file", StringComparer.OrdinalIgnoreCase);
+        ICatalogStore store = useFile
+            ? new FileCatalogStore(filePath)
+            : new InMemoryCatalogStore(SampleData.Products());
 
-        bool useFile = args.Contains(
-            "--file",
-            StringComparer.OrdinalIgnoreCase);
-
-        if (useFile)
-        {
-            string path = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "data",
-                "catalog.json");
-
-            store = new FileCatalogStore(path);
-        }
-        else
-        {
-            store = new InMemoryCatalogStore(
-                SampleData.Products());
-        }
-
-        // Декоратор додає кешування до обраного сховища.
         return new CachingCatalogStore(store);
     }
+
+    // Зберігаємо попередній виклик для сумісності з кодом старих лабораторних.
+    public static ICatalogStore Create(string[] args)
+        => Create(args, Path.Combine(AppContext.BaseDirectory, "data", "items.json"));
 }
